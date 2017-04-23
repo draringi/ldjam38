@@ -40,7 +40,7 @@ func NewProvence(tag string, red, green, blue uint8, name string, metal, startPo
 	p.MetalCount = metal
 	p.Population = startPop
 	p.Level = startLevel
-	p.Colour = sdl.Color{red, green, blue, 0}
+	p.Colour = sdl.Color{red, green, blue, 100}
 	return p
 }
 
