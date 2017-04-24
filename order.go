@@ -3,6 +3,7 @@ package main
 type Order interface {
 	Execute(nation *Nation)
 	IsDone() bool
+	Provence() *Provence
 }
 
 type BuildOrder struct {
@@ -34,6 +35,10 @@ func (o *BuildOrder) Execute(nation *Nation) {
 
 func (o *BuildOrder) IsDone() bool {
 	return o.count == 0
+}
+
+func (o *BuildOrder) Provence() *Provence {
+	return o.provence
 }
 
 type TrainOrder struct {
@@ -68,6 +73,10 @@ func (o *TrainOrder) IsDone() bool {
 	return o.count == 0
 }
 
+func (o *TrainOrder) Provence() *Provence {
+	return o.provence
+}
+
 type MoveOrder struct {
 	army *Army
 	target *Provence
@@ -76,4 +85,18 @@ type MoveOrder struct {
 func (o *MoveOrder) IsDone() bool {
 	// A move order always counts as done, even if the move is interupted
 	return true
+}
+
+func (o *MoveOrder) Provence() *Provence {
+	return nil
+}
+
+func ProvincialOrders(OrderQueue []Order, provence *Provence) []Order {
+	orders := []Order{}
+	for _, order := range (OrderQueue) {
+		if provence == order.Provence() {
+			orders = append(orders, order)
+		}
+	}
+	return orders
 }

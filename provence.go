@@ -1,6 +1,9 @@
 package main
 
-import "github.com/veandco/go-sdl2/sdl"
+import (
+	"github.com/veandco/go-sdl2/sdl"
+	"log"
+)
 
 type nodeLevel int
 
@@ -10,6 +13,36 @@ const (
 	LevelCity
 	LevelCapital
 )
+
+func (n nodeLevel) String() string {
+	switch n {
+	case LevelVillage:
+		return "Village"
+	case LevelTown:
+		return "Town"
+	case LevelCity:
+		return "City"
+	case LevelCapital:
+		return "Capital"
+	default:
+		return "[UNKNOWN]"
+	}
+}
+
+func (n nodeLevel) Symbol() *Symbol {
+	switch n {
+	case LevelVillage:
+		return SymbolMap[SymbolVillage]
+	case LevelTown:
+		return SymbolMap[SymbolTown]
+	case LevelCity:
+		return SymbolMap[SymbolCity]
+	case LevelCapital:
+		return SymbolMap[SymbolCapital]
+	default:
+		return nil
+	}
+}
 
 const (
 	PopWorkerModifer = 10000
@@ -91,9 +124,109 @@ func (p *Provence ) Defendability() int {
 	return 10*int(p.Level) + p.DefendabilityMod
 }
 
+func isOdd(n int) bool {
+	n_div := n >> 1
+	return (n - (n_div<<1)) == 1
+}
+
+func inBounds(n float64, p1, p2 int32) bool {
+	if p1 > p2 {
+		p1, p2 = p2, p1
+	}
+	if n >= float64(p1) && n < float64(p2) {
+		return true
+	}
+	return false
+}
+
+func (p *Provence) Contains(x, y int32) bool {
+	
+	poly := polygonMap[p.Tag]
+	if poly == nil {
+		log.Panicf("Unknown tag %s\n", p.Tag)
+	}
+	point_count := len(poly.vx)
+	poly_points := make([]sdl.Point, point_count)
+	for i, _ := range(poly.vx) {
+		poly_points[i].X = int32(poly.vx[i])
+		poly_points[i].Y = int32(poly.vy[i])
+	}
+	containingRect, _ := sdl.EnclosePoints(poly_points, nil)
+	point := new(sdl.Point)
+	point.X = x
+	point.Y = y
+	if !point.InRect(&containingRect) {
+		return false
+	}
+	poly_lines := make([][2]sdl.Point, point_count)
+	for i, p := range(poly_points) {
+		poly_lines[i][0] = p
+		if i==0 {
+			poly_lines[point_count -1][1] = p
+		} else {
+			poly_lines[i-1][1] = p
+		}
+	}
+	cross_count := 0
+	parrallel_count := 0
+	for _, line := range(poly_lines) {
+		line_y_diff := line[0].Y - line[1].Y
+		line_x_diff := line[0].X - line[1].X
+		determinate := point.Y*line_x_diff - point.X*line_y_diff
+		if determinate == 0 {
+			parrallel_count++
+			continue
+		}
+		line_prod := line[0].X * line[1].Y - line[0].Y * line[1].X
+		if line_x_diff != 0 {
+			cross_x := float64(line_prod * point.X)/float64(determinate)
+			if !(inBounds(cross_x, line[0].X, line[1].X) && cross_x < float64(point.X)) {
+				continue
+			}
+		}
+		if line_y_diff != 0 {
+			cross_y := float64(line_prod * point.Y)/float64(determinate)
+			if inBounds(cross_y, line[0].Y, line[1].Y) && cross_y < float64(point.Y) {
+				cross_count++
+			}
+		} else {
+			cross_count++
+		}
+	}
+	return isOdd(cross_count)
+}
+
+func (p *Provence) Centre() (int16, int16) {
+	poly := polygonMap[p.Tag]
+	if poly == nil {
+		log.Panicf("Unknown tag %s\n", p.Tag)
+	}
+	centreX := 0
+	for _, val := range(poly.vx) {
+		centreX += int(val)
+	}
+	centreX /= len(poly.vx)
+	centreY := 0
+	for _, val := range(poly.vy) {
+		centreY += int(val)
+	}
+	centreY /= len(poly.vy)
+	return int16(centreX), int16(centreY)
+}
+
+func GetProvenceAt(x, y int32) *Provence {
+	for _, prov := range(Provences) {
+		if prov.Contains(x, y) {
+			return prov
+		}
+	}
+	return nil
+}
+
 type Path [2]string
 
 var (
 	Provences map[string]*Provence
+	SelectedProvence *Provence = nil
 	Paths []Path
 )

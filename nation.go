@@ -13,6 +13,7 @@ type Nation struct {
 	Leader *Character
 	Equipment map[ItemType]int
 	OrderQueue []Order
+	Armies []*Army
 }
 
 const (
@@ -33,5 +34,5 @@ func NewNation(name, tag string, leader *Character, red, green, blue uint8) *Nat
 }
 
 func (n *Nation) EndTurn() {
-	
+	ActiveTurnManager.SubmitTurn(n, n.OrderQueue)
 }

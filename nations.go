@@ -23,8 +23,18 @@ func MakeNationNorden() {
 	Provences["ARB"].Owner = n
 }
 
+func MakePlayerNation(name string) {
+	n := NewNation(name, "PLA", nil, 0, 255, 0)
+	Nations[n.Tag] = n
+	Provences["BRL"].Owner = n
+	Provences["BBB"].Owner = n
+	Provences["SCO"].Owner = n
+	Provences["FLA"].Owner = n
+}
+
 func InitNations() {
 	Nations = make(map[string]*Nation)
 	MakeNationSumer()
 	MakeNationNorden()
+	MakePlayerNation("Player")
 }
